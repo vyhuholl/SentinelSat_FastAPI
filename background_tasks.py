@@ -28,8 +28,7 @@ load_dotenv()
 app = Celery('background_tasks', broker=os.environ.get('BROKER_URI'))
 
 api = SentinelAPI(
-    os.environ.get('SENTINEL_USERNAME'), os.environ.get('SENTINEL_PASSWORD'),
-    'https://apihub.copernicus.eu/apihub'
+    os.environ.get('DHUS_USER'), os.environ.get('DHUS_PASSWORD'),
 )
 
 client = SentinelClient(api)
@@ -41,23 +40,31 @@ file_structure = FileStructure(os.environ.get(
 
 
 @app.task()
-def get_sentinel_data(field_id: int, geojson: Dict[str, str | Dict]) -> None:
+def get_sentinel_data(
+    field_id: int, geojson: Dict[str, str | Dict],
+    max_days: int = 1, max_cloud_cover: int = 30
+        ) -> None:
     '''
     Downloads zipped field data from API and unzips it.
 
     Parameters:
         field_id: int
         geojson: Dict[str, str | Dict]
+        max_days: int
+        max_cloud_cover: int
 
     Returns:
         None
     '''
+    logging.info(f'Started download for the field {field_id}')
+
     try:
         crud.change_status(field_id, 'Started download')
         zipped_dir = file_structure.get_path_to_satellite_data(field_id)
 
         zipped_path = client.get_data(
-            geojson_to_wkt(geojson), output_dir=zipped_dir
+            geojson_to_wkt(geojson), output_dir=zipped_dir,
+            max_days=max_days, max_cloud_cover=max_cloud_cover
             )
 
         with ZipFile(zipped_path, 'r') as zip_file:

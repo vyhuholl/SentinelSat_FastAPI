@@ -37,7 +37,8 @@ class CRUD:
             str
         '''
         logger.info(f'Getting status of the field {field_id}...')
-        field = self.db.query(Field).where(Field.id == field_id)
+        field = self.db.query(Field).filter_by(id=field_id).first()
+        self.db.close()
         return field.status
 
     def change_status(self, field_id: int, status: str) -> None:
@@ -93,7 +94,8 @@ class CRUD:
             JSON
         '''
         logger.info(f'Getting GeoJSON image for the field {field_id}...')
-        field = self.db.query(Field).where(Field.id == field_id)
+        field = self.db.query(Field).filter_by(id=field_id).first()
+        self.db.close()
         return field.geojson
 
     def save_ndvi_path(

@@ -26,8 +26,8 @@ logger = logging.getLogger()
 
 
 @router.post('/')
-async def add_field(
-    field: FeatureCollection, conn: CRUD = Depends(CRUD())
+def add_field(
+    field: FeatureCollection, conn: CRUD = Depends(CRUD)
         ) -> JSONResponse:
     '''
     Adds field (in GeoJSON format) to the database.
@@ -40,7 +40,7 @@ async def add_field(
         JSONResponse
     '''
     logger.info('Adding a new field to the database...')
-    field_id = conn.create_field(field)
+    field_id = conn.add_field(field)
     logger.info(f'Added field {field_id} to the database')
 
     return JSONResponse({
@@ -49,8 +49,9 @@ async def add_field(
 
 
 @router.post('/image')
-async def download_image(
-    field_id: int, conn: CRUD = Depends(CRUD())
+def download_image(
+    field_id: int, conn: CRUD = Depends(CRUD),
+    max_days: int = 1, max_cloud_cover: int = 30
         ) -> JSONResponse:
     '''
     Downloads satellite image for the field.
@@ -58,13 +59,15 @@ async def download_image(
     Parameters:
         field_id: int
         conn: CRUD
+        max_days: int
+        max_cloud_cover: int
 
     Returns:
         JSONResponse
     '''
     logger.info(f'Downloading satellite image for the field {field_id}...')
     geojson = conn.get_field(field_id)
-    get_sentinel_data.delay(geojson, field_id)
+    get_sentinel_data.delay(field_id, geojson, max_days, max_cloud_cover)
     logger.info(f'Downloaded satellite image for the field {field_id}')
 
     return JSONResponse({
@@ -74,8 +77,8 @@ async def download_image(
 
 
 @router.post('/ndvi')
-async def create_ndvi(
-    field_id: int, is_png: bool = False, conn: CRUD = Depends(CRUD())
+def create_ndvi(
+    field_id: int, is_png: bool = False, conn: CRUD = Depends(CRUD)
         ) -> JSONResponse:
     '''
     Calculates NDVI for the field and saves NDVI image.
@@ -106,8 +109,8 @@ async def create_ndvi(
 
 
 @router.get('/ndvi')
-async def get_ndvi(
-    field_id: int, is_png: bool = False, conn: CRUD = Depends(CRUD())
+def get_ndvi(
+    field_id: int, is_png: bool = False, conn: CRUD = Depends(CRUD)
         ) -> FileResponse | JSONResponse:
     '''
     Returns NDVI image by the field id.
@@ -121,6 +124,9 @@ async def get_ndvi(
         FileResponse | JSONResponse
     '''
     messages = {
+        'Created': 'Image download has not started yet',
+        'Started download': 'Image download has not finished yet',
+        'Error on download': 'An error happened during image download.',
         'Started calculation': 'NDVI is not calculated yet',
         'Error on calculation': 'An error happened during NDVI calculation.',
     }
@@ -139,7 +145,7 @@ async def get_ndvi(
 
 
 @router.delete('/')
-async def delete_field(field_id: int, conn: CRUD = Depends(CRUD())) -> None:
+def delete_field(field_id: int, conn: CRUD = Depends(CRUD)) -> None:
     '''
     Deletes field from the database by id.
 

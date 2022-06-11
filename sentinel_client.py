@@ -1,4 +1,5 @@
 import os
+from datetime import date, timedelta
 from typing import Dict
 
 from sentinelsat import SentinelAPI
@@ -23,7 +24,7 @@ class SentinelClient:
 
     def get_data(
         self, footprint: Dict[str, str | Dict], output_dir: str,
-        max_day: int = 1, max_cloud_cover: int = 30
+        max_days: int = 1, max_cloud_cover: int = 30
             ) -> str:
         '''
         Downloads data from Copernicus Open Access Hub by footprint.
@@ -33,14 +34,16 @@ class SentinelClient:
             self
             footprint: Dict[str, str | Dict]
             output_dir: str
-            max_day: int
+            max_days: int
             max_cloud_cover: int
 
         Returns:
             str
         '''
         results = self.api.query(
-            footprint, date=f'NOW-{max_day}DAY', platformname='Sentinel-2',
+            footprint,
+            date=(date.today(), date.today() - timedelta(days=max_days)),
+            platformname='Sentinel-2',
             cloudcoverpercentage=(0, max_cloud_cover)
             )
 
