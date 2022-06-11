@@ -1,0 +1,51 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - '6379:6379'
+  celery:
+      build: .
+      command: bash -c '/wait && celery -A background_tasks worker --loglevel=INFO -E'
+      env_file:
+        - .env
+      environment:
+        - WAIT_HOSTS=postgres:5432, redis:6379
+        - WAIT_HOSTS_TIMEOUT=300
+        - WAIT_SLEEP_INTERVAL=30
+        - WAIT_HOST_CONNECT_TIMEOUT=30
+      volumes:
+        - ./data/images:/STORAGE
+      depends_on:
+        - postgres
+        - redis
+
+  fastapi:
+    build: .
+    command: bash -c '/wait && uvicorn main:app --host 0.0.0.0'
+    container_name: app
+    env_file:
+      - .env
+    environment:
+      - WAIT_HOSTS=postgres:5432
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=30
+      - WAIT_HOST_CONNECT_TIMEOUT=30
+    volumes:
+      - ./data/images:/STORAGE
+    depends_on:
+      - postgres
+      - celery
+    ports:
+      - '8000:8000'

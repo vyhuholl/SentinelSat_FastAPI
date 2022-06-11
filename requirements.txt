@@ -1,0 +1,14 @@
+celery>=5.2.7
+geojson-pydantic>=0.4.1
+geopandas>=0.10.2
+fastapi>=0.78.0
+matplotlib>=3.5.2
+numpy>=1.22.4
+psycopg2-binary>=2.9.3
+pydantic>=1.9.1
+python-dotenv>=0.20.0
+rasterio==1.3a3
+redis>=4.3.3
+sentinelsat>=1.1.1
+sqlalchemy>=1.4.37
+uvicorn>=0.17.6
